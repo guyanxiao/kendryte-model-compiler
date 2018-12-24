@@ -35,7 +35,7 @@ class _basic_layer_(object):
         self.scope = scope
         # check if the layer type is supported
         # print(layer_type)
-        assert layer_type in __layer_types__, 'unsupported layer type: %s' % (layer_type)
+        assert layer_type in __layer_types__, 'unsupported layer type: %s' % layer_type
         self.type = layer_type
         self.name = '{}_{}'.format(name, __layer_types__[layer_type]) \
             if name.isdigit() else name
@@ -151,9 +151,9 @@ class dw_convolutional_layer(_basic_layer_):
         return super(dw_convolutional_layer, self).__str__() + \
                '\n%i -> %i \t %ix%i/%i\n' % (self.num_in, self.num_out,
                                              self.kernel_size, self.kernel_size, self.stride) + \
-               'padding: %s\n' % (self.padding) + \
+               'padding: %s\n' % self.padding + \
                'batch_normalize: %s\n' % (str(self.batch_normalize)) + \
-               'activation: %s' % (self.activation_fn)
+               'activation: %s' % self.activation_fn
 
     def my_size(self, flag='byte'):  # size flag
         bw = __size_flag__[flag]

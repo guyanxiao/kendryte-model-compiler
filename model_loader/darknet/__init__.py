@@ -20,18 +20,19 @@ import tempfile
 import tensorflow as tf
 from .D2T_lib import darknet_tool, tensorflow_tool
 
+
 def decode_darknet(cfg_file, weights_file, output_dir):
-        net1 = darknet_tool.darknet_network('network',
-                                           cfg_file=cfg_file,
-                                           weights_file=weights_file,
-                                           dtype='float32')
+    net1 = darknet_tool.darknet_network('network',
+                                        cfg_file=cfg_file,
+                                        weights_file=weights_file,
+                                        dtype='float32')
 
-        net1.net.statistcs_size(print_out=True)
+    net1.net.statistcs_size(print_out=True)
 
-        if os.path.exists(output_dir) and False:
-            print('For security, I won\'t overwrite the existed directory.')
-        else:
-            tensorflow_tool.darknet_to_tf_module(net1, out_dir=output_dir)
+    if os.path.exists(output_dir) and False:
+        print('For security, I won\'t overwrite the existed directory.')
+    else:
+        tensorflow_tool.darknet_to_tf_module(net1, out_dir=output_dir)
 
 
 def darknet2pb(input_dir, output_pb_path='tf_model', input_node_name='input'):
@@ -53,7 +54,7 @@ def darknet2pb(input_dir, output_pb_path='tf_model', input_node_name='input'):
     dtype = info_dict['data type']
 
     # set input placeholder
-    inp = tf.placeholder(shape=[1, input_h, input_w, channel],
+    inp = tf.placeholder(shape=[None, input_h, input_w, channel],
                          dtype=dtype,
                          name=input_node_name)
 
@@ -73,9 +74,7 @@ def darknet2pb(input_dir, output_pb_path='tf_model', input_node_name='input'):
     tf.train.write_graph(graph, input_dir, '{}.pb'.format(output_pb_path), as_text=False)
     tf.reset_default_graph()
 
-
     return inp.name, yv2.op.name, input_w, input_h
-
 
 
 def load_model(dataset_val, range_from_batch, args):
@@ -88,14 +87,13 @@ def load_model(dataset_val, range_from_batch, args):
     decode_darknet(cfg_path, weights_path, build_dir)
     pb_name = 'output'
     dataset_input_name, tensor_output_name, input_w, input_h = darknet2pb(build_dir, pb_name, 'input')
-    assert(args.image_w == input_w)
-    assert(args.image_h == input_h)
+    assert (args.image_w == input_w)
+    assert (args.image_h == input_h)
 
-    pb_path = os.path.join(build_dir, pb_name+'.pb')
+    pb_path = os.path.join(build_dir, pb_name + '.pb')
 
     args.pb_path = pb_path
     args.tensor_output_name = tensor_output_name
     args.dataset_input_name = dataset_input_name
 
     return pb_loader.load_model(dataset_val, range_from_batch, args)
-
