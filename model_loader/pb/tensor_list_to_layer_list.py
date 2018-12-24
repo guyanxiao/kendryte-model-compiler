@@ -100,6 +100,9 @@ class LayerConvolutional(LayerBase):
             leaky_reul_max, leaky_reul_mul, bn_add, bn_mul, bn_div, bn_sub, conv2d = info
             activation = ['leaky', leaky_reul_max, leaky_reul_mul]
             batch_norm = [bn_add, bn_mul, bn_div, bn_sub]
+        elif self.type_match(info, ['Relu', 'Add', 'Mul', 'RealDiv', 'Sub', 'Conv2D']):
+            activation, bn_add, bn_mul, bn_div, bn_sub, conv2d = info
+            batch_norm = [bn_add, bn_mul, bn_div, bn_sub]
         elif self.type_match(info, ['Relu6', 'BiasAdd', 'Conv2D']):
             activation, bias_add, conv2d = info
         elif self.type_match(info, ['Relu6', 'FusedBatchNorm', 'BiasAdd', 'Conv2D']):
@@ -232,6 +235,9 @@ class LayerDepthwiseConvolutional(LayerBase):
         elif self.type_match(info, ['Maximum', 'Mul', 'Add', 'Mul', 'RealDiv', 'Sub', 'DepthwiseConv2dNative']):
             leaky_reul_max, leaky_reul_mul, bn_add, bn_mul, bn_div, bn_sub, dwconv = info
             activation = ['leaky', leaky_reul_max, leaky_reul_mul]
+            batch_norm = [bn_add, bn_mul, bn_div, bn_sub]
+        elif self.type_match(info, ['Relu', 'Add', 'Mul', 'RealDiv', 'Sub', 'DepthwiseConv2dNative']):
+            activation, bn_add, bn_mul, bn_div, bn_sub, dwconv = info
             batch_norm = [bn_add, bn_mul, bn_div, bn_sub]
         else:
             raise ValueError(
