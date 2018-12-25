@@ -29,6 +29,7 @@ def make_k210_layer_from_tensor(sess, dataset, buffer, input_min, input_max, eig
 
         input_shape = list(sess.run(conv_layer.tensor_conv_x, dataset).shape)
         conved_shape = list(sess.run(conv_layer.tensor_conv_y, dataset).shape)
+        output_shape = conved_shape
 
         if conv_layer.tensor_conv_x.op.type == 'SpaceToBatchND':
             print('[warning] found SpaceToBatchND fix input_shape/')
@@ -50,17 +51,22 @@ def make_k210_layer_from_tensor(sess, dataset, buffer, input_min, input_max, eig
             ]
             bn_tensor_info = {'name': 'bn'}
         else:
-            bias_shape = conv_layer.bias.shape
-            bn_mean_var_gamma_beta_epsilon = [
-                0, 1, np.ones(bias_shape), conv_layer.bias, 0
-            ]
+            if conv_layer.bias is not None:
+                bias_shape = conv_layer.bias.shape
+                bn_mean_var_gamma_beta_epsilon = [
+                    0, 1, np.ones(bias_shape), conv_layer.bias, 0
+                ]
+            else:
+                bn_mean_var_gamma_beta_epsilon = [
+                    0, 1, np.ones([conved_shape[3]]), 0, 0
+                ]
+
             bn_tensor_info = {'name': 'bn'}
 
         tensor_act = conv_layer.tensor_activation
         act_min_y, act_max_y, _ = range_from_batch(sess, tensor_act, dataset)
         act_type = conv_layer.config['activation']
         act_tensor_info = {'name': tensor_act.name if tensor_act is not None else 'default_linear'}
-        output_shape = tensor_act.shape
     else:
         raise ValueError('unsupported type seq: ', *[type(l) for l in buffer])
 
@@ -78,6 +84,7 @@ def make_k210_layer_from_tensor(sess, dataset, buffer, input_min, input_max, eig
 
         pool_type_size_stride = [pool_type, pool_size, pool_stride]
         pool_tensor_info = {'name': pool_layer.tensor_pool.op.name}
+        output_shape = [output_shape[0], output_shape[1]//pool_stride, output_shape[2]//pool_stride, output_shape[3]]
 
     return {
         'iwo_minmax':[input_min, input_max, weights_min, weights_max, act_min_y, act_max_y],

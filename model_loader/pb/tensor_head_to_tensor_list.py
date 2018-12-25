@@ -162,6 +162,9 @@ class PbConverter:
         if self.ty_match(['act', 'FusedBatchNorm', 'BiasAdd', 'DepthwiseConv2dNative']):
             self.dst.append(['depthwise_convolutional', *self.pop_src(0, 0, 0, 0)])
             return True
+        elif self.ty_match(['DepthwiseConv2dNative']):
+            self.dst.append(['depthwise_convolutional', *self.pop_src(0)])
+            return True
         elif self.ty_match(['act', 'FusedBatchNorm', 'DepthwiseConv2dNative']):
             self.dst.append(['depthwise_convolutional', *self.pop_src(0, 0, 0)])
             return True

@@ -220,6 +220,7 @@ class LayerDepthwiseConvolutional(LayerBase):
         bias_add = None
         batch_norm = None
         leaky_reul_mul = None
+        activation = None
         if self.type_match(info, ['Relu', 'FusedBatchNorm', 'BiasAdd', 'DepthwiseConv2dNative']):
             activation, batch_norm, bias_add, dwconv = info
         elif self.type_match(info, ['Relu', 'BiasAdd', 'DepthwiseConv2dNative']):
@@ -228,6 +229,8 @@ class LayerDepthwiseConvolutional(LayerBase):
             activation, batch_norm, dwconv = info
         elif self.type_match(info, ['Relu6', 'BiasAdd', 'DepthwiseConv2dNative']):
             activation, bias_add, dwconv = info
+        elif self.type_match(info, ['DepthwiseConv2dNative']):
+            dwconv, = info
         elif self.type_match(info, ['Relu6', 'FusedBatchNorm', 'BiasAdd', 'DepthwiseConv2dNative']):
             activation, batch_norm, bias_add, dwconv = info
         elif self.type_match(info, ['Relu6', 'FusedBatchNorm', 'DepthwiseConv2dNative']):
@@ -260,6 +263,8 @@ class LayerDepthwiseConvolutional(LayerBase):
             self.tensor_activation = batch_norm
         elif bias_add is not None:
             self.tensor_activation = bias_add
+        else:
+            self.tensor_activation = dwconv
 
         assert (isinstance(dwconv, tf.Tensor))
         self.config['size'] = int(dwconv.op.inputs[1].shape[0])
