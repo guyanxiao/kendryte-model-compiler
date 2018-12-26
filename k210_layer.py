@@ -205,15 +205,15 @@ class K210BN:
         bmax = max(abs(np.min(scale)), abs(np.max(scale)))
         brange = bmax
         sb = brange / 255
-        swsxsb = swsx * sb
+        swsxsb = max(swsx * sb, 1e-8)
         out_shift, out_mul = tools.pow_next_log_of_2_no_round(swsxsb, 15)
 
         bn_shift = 15
         act_shift = out_shift - bn_shift
         post_scale = out_mul / np.round(out_mul) * np.power(2, act_shift)
 
-        scale = [int(round(item)) for item in scale / sb * out_mul]
-        bias = [int(round(item)) for item in bias * post_scale]
+        scale = (scale / sb * out_mul).round().astype('int32')
+        bias = (bias * post_scale).round().astype('int32')
 
         load_para = 1
         bwsx_base_addr = [
