@@ -24,7 +24,13 @@ def load_model(dataset_val, range_from_batch, args):
     if not args.h5_path.endswith('.h5'):
         raise ValueError('{} should endwith *.h5'.format(args.h5_path))
 
-    args.pb_path = h5_converter.convert(args.h5_path)
+    custom_objects = None
+    if args.h5_custom_objects is not None:
+        custom_objects_file = args.h5_custom_objects
+        custom_objects_module = tools.import_from_path(custom_objects_file)
+        custom_objects = custom_objects_module.get_custom_objects()
+
+    args.pb_path = h5_converter.convert(args.h5_path, custom_objects)
 
     return pb_loader.load_model(dataset_val, range_from_batch, args)
 

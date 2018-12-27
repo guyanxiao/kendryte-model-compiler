@@ -62,6 +62,7 @@ def main():
     parser.add_argument('--tensorboard_mode', type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument('--pb_path', default=None)
     parser.add_argument('--h5_path', default=None)
+    parser.add_argument('--h5_custom_objects', default=None)
     parser.add_argument('--cfg_path', default=None)
     parser.add_argument('--weights_path', default=None)
     parser.add_argument('--tensor_input_name', default=None)

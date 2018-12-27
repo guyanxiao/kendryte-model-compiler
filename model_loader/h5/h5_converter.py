@@ -52,13 +52,14 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
         return frozen_graph
 
 
-def convert(h5_in):
+def convert(h5_in, custom_objects=None):
     pb_out = tempfile.mktemp('.pb')
     *pb_path_list, pb_name = pb_out.split('/')
     pb_path = '/'.join(pb_path_list)
+    custom_objects = custom_objects or {'tf': tf}
 
     K.set_learning_phase(0)
-    net_model = keras.models.load_model(h5_in, custom_objects={'tf': tf})
+    net_model = keras.models.load_model(h5_in, custom_objects=custom_objects)
 
     frozen_graph = freeze_session(K.get_session(), output_names=[net_model.output.op.name])
     graph_io.write_graph(frozen_graph, pb_path, pb_name, as_text=False)
