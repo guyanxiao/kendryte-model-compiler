@@ -60,7 +60,9 @@ class LayerConvolutional(LayerBase):
         bn_add, bn_sub, bn_div, bn_mul = None, None, None, None
         leaky_reul_mul = None
 
-        if self.type_match(info, ['Add', 'Conv2D']):
+        if self.type_match(info, ['Conv2D']):
+            conv2d, = info
+        elif self.type_match(info, ['Add', 'Conv2D']):
             bias_add, conv2d = info
         elif self.type_match(info, ['Add', 'Mul', 'Conv2D']):
             bn_add, bn_mul, conv2d = info
@@ -70,6 +72,8 @@ class LayerConvolutional(LayerBase):
             bias_add, conv2d = info
         elif self.type_match(info, ['Relu', 'BiasAdd', 'Conv2D']):
             activation, bias_add, conv2d = info
+        elif self.type_match(info, ['Relu', 'Conv2D']):
+            activation, conv2d = info
         elif self.type_match(info, ['Relu', 'Add', 'Conv2D']):
             activation, bias_add, conv2d = info
         elif self.type_match(info, ['Relu', 'FusedBatchNorm', 'Conv2D']):
@@ -132,6 +136,8 @@ class LayerConvolutional(LayerBase):
                 self.tensor_activation = batch_norm
         elif bias_add is not None:
             self.tensor_activation = bias_add
+        else:
+            self.tensor_activation = conv2d
 
         assert (isinstance(conv2d, tf.Tensor))
         self.config['size'] = int(conv2d.op.inputs[1].shape[0])
