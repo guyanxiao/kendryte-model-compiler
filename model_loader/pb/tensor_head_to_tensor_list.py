@@ -77,7 +77,10 @@ class PbConverter:
             return False
 
     def try_convolutional(self):
-        if self.ty_match(['BiasAdd', 'Conv2D']):
+        if self.ty_match(['Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0)])
+            return True
+        elif self.ty_match(['BiasAdd', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0)])
             return True
         elif self.ty_match(['Add', 'Conv2D']):
@@ -91,6 +94,9 @@ class PbConverter:
             return True
         elif self.ty_match(['act', 'Add', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0, 0)])
+            return True
+        elif self.ty_match(['act', 'Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0)])
             return True
         elif self.ty_match(['Relu', 'FusedBatchNorm', 'BiasAdd', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0, 0, 0)])
