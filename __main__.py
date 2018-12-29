@@ -73,6 +73,7 @@ def main():
 
     parser.add_argument('--dataset_loader', default='dataset_loader/img_0_1.py')
     parser.add_argument('--dataset_pic_path', default='dataset/yolo')
+    parser.add_argument('--dataset_path', default='dataset/yolo')
     parser.add_argument('--image_w', type=int, default=320)
     parser.add_argument('--image_h', type=int, default=240)
 
