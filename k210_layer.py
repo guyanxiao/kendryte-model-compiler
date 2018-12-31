@@ -205,7 +205,7 @@ class K210BN:
         bmax = max(abs(np.min(scale)), abs(np.max(scale)))
         brange = bmax
         sb = brange / 255
-        swsxsb = max(swsx * sb, 1e-8)
+        swsxsb = swsx * sb # todo: fix this range,  this is tooo small for python
         out_shift, out_mul = tools.pow_next_log_of_2_no_round(swsxsb, 15)
 
         bn_shift = 15
@@ -396,7 +396,7 @@ class K210Layer:
         ]
         print(
             '[layer {}]: {}'.format(idx, output_name),
-            '           shape(WHC): {}x{}x{} ==> {}x{}x{}'.format(*layer_shape_trans),
+            '           shape(HWC): {}x{}x{} ==> {}x{}x{}'.format(*layer_shape_trans),
             '           scale,bias: ({},{}) ==> ({},{})'.format(input_scale, input_bias, output_scale, output_bias),
             sep='\n'
         )
