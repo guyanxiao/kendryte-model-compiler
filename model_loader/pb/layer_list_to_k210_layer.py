@@ -43,7 +43,7 @@ def make_k210_layer_from_tensor(sess, dataset, buffer, input_min, input_max, eig
 
         if int(conv_layer.config['batch_normalize']) == 1:
             bn_mean_var_gamma_beta_epsilon = [
-                conv_layer.batch_normalize_moving_mean,
+                conv_layer.batch_normalize_moving_mean - (conv_layer.bias if conv_layer.bias is not None else 0),
                 conv_layer.batch_normalize_moving_variance,
                 conv_layer.batch_normalize_gamma,
                 conv_layer.batch_normalize_beta,
