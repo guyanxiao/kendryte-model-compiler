@@ -16,6 +16,7 @@
 
 import numpy as np
 
+
 class RangeFromBatchMinMax:
     def __call__(self, sess, tensor, dataset, is_weights=False):
         batch = sess.run(tensor, dataset)
@@ -24,43 +25,48 @@ class RangeFromBatchMinMax:
         print('tensor {} min/max = '.format(tensor.name), minv, maxv)
         return minv, maxv, batch
 
+
 class RangeFromBatchMinMax98:
     def __call__(self, sess, tensor, dataset, is_weights=False):
         batch = sess.run(tensor, dataset)
         batch_s = sorted(batch.flatten())
-        assert(batch.size > 100)
-        minv = batch_s[round(len(batch_s)*0.01)]
-        maxv = batch_s[round(len(batch_s)*0.99)]
+        assert (batch.size > 100)
+        minv = batch_s[round(len(batch_s) * 0.01)]
+        maxv = batch_s[round(len(batch_s) * 0.99)]
         return minv, maxv, batch
+
 
 class RangeFromBatchMinMax90:
     def __call__(self, sess, tensor, dataset, is_weights=False):
         batch = sess.run(tensor, dataset)
         batch_s = sorted(batch.flatten())
-        assert(batch.size > 100)
-        minv = batch_s[round(len(batch_s)*0.05)]
-        maxv = batch_s[round(len(batch_s)*0.95)]
+        assert (batch.size > 100)
+        minv = batch_s[round(len(batch_s) * 0.05)]
+        maxv = batch_s[round(len(batch_s) * 0.95)]
         return minv, maxv, batch
+
 
 class RangeFromBatchMinMax80:
     def __call__(self, sess, tensor, dataset, is_weights=False):
         batch = sess.run(tensor, dataset)
         batch_s = sorted(batch.flatten())
-        assert(batch.size > 100)
-        minv = batch_s[round(len(batch_s)*0.1)]
-        maxv = batch_s[round(len(batch_s)*0.9)]
+        assert (batch.size > 100)
+        minv = batch_s[round(len(batch_s) * 0.1)]
+        maxv = batch_s[round(len(batch_s) * 0.9)]
         return minv, maxv, batch
+
 
 class RangeFromBatchMeanMinsMaxs:
     def __call__(self, sess, tensor, dataset, is_weights=False):
         if is_weights:
-            return RangeFromBatchMinMax()(sess, tensor,dataset,is_weights)
+            return RangeFromBatchMinMax()(sess, tensor, dataset, is_weights)
         else:
             batch = sess.run(tensor, dataset)
             n_batch = np.reshape(batch, [batch.shape[0], np.prod(batch.shape[1:])])
             minv = n_batch.min(axis=1).mean()
             maxv = n_batch.max(axis=1).mean()
             return minv, maxv, batch
+
 
 class RangeFromBatchKL:
     BINS_NUMBER = 8192
@@ -70,7 +76,6 @@ class RangeFromBatchKL:
         """Yield successive n-sized chunks from l."""
         for i in range(0, len(l), n):
             yield l[i:i + n]
-
 
     def smooth(self, y, box_pts):
         box = np.ones(box_pts) / box_pts
@@ -96,7 +101,6 @@ class RangeFromBatchKL:
 
         return final_array
 
-
     def calc_kld(self, P, start_bin_max, end_bin_max, start_bin_min, end_bin_min, delta, max_val, min_val):
         import scipy.stats
         from copy import deepcopy
@@ -119,7 +123,9 @@ class RangeFromBatchKL:
                 right_replace_val = 0
                 if sum(right_outliers_P > 0) > 0:
                     right_replace_val = sum(right_outliers_P) / sum(right_outliers_P > 0)
-                candidate_distribution_Q = list(left_replace_val * (left_outliers_P > 0)) + candidate_distribution_Q[(i - j) // self.QUANTIZE_SIZE:i - j - ( i - j) // self.QUANTIZE_SIZE] + list(right_replace_val * (right_outliers_P > 0))
+                candidate_distribution_Q = list(left_replace_val * (left_outliers_P > 0)) + candidate_distribution_Q[(
+                                                                                                                                 i - j) // self.QUANTIZE_SIZE:i - j - (
+                            i - j) // self.QUANTIZE_SIZE] + list(right_replace_val * (right_outliers_P > 0))
 
                 Q = np.array(candidate_distribution_Q)
 
@@ -129,7 +135,6 @@ class RangeFromBatchKL:
                 klds[(j, i)] = kld
 
         return klds
-
 
     def convert_layer_output(self, data):
         image_num = data.shape[0]
@@ -147,7 +152,6 @@ class RangeFromBatchKL:
             P = P + n
 
         return (P, min_all, max_all, delta)
-
 
     def find_min_max_kld(self, data):
         (P, min_data, max_data, delta) = self.convert_layer_output(data)
@@ -167,7 +171,7 @@ class RangeFromBatchKL:
 
     def __call__(self, sess, tensor, dataset, is_weights=False):
         if is_weights:
-            return RangeFromBatchMinMax()(sess, tensor,dataset,is_weights)
+            return RangeFromBatchMinMax()(sess, tensor, dataset, is_weights)
         else:
             batch = sess.run(tensor, dataset)
             minv, maxv = self.find_min_max_kld(batch)
