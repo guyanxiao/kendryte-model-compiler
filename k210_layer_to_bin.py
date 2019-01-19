@@ -29,6 +29,21 @@ default_pool_arg = {
     'pool_type': 0,  # bypass
 }
 
+kpu_layer_config_reg_offset = {
+    'interrupt_enabe': 0,
+    'image_addr': 1,
+    'image_channel_num': 2,
+    'image_size': 3,
+    'kernel_pool_type_cfg': 4,
+    'kernel_load_cfg': 5,
+    'kernel_offset': 6,
+    'kernel_calc_type_cfg': 7,
+    'write_back_cfg': 8,
+    'conv_value': 9,
+    'conv_value2': 10,
+    'dma_parameter': 11
+}
+
 kpu_layer_config_field_offset = {
     'interrupt_enabe': {
         'int_en': 0,
@@ -226,6 +241,7 @@ def gen_layer_list_struct(klayers: [k210_layer.K210Layer]):
 
 
 def gen_layer_code(dlayer, layer_cfg):
+    layer_cfg.reg_arg = bytearray(len(dlayer[0].items()) * 8)
     for reg_name, data in dlayer[0].items():
         value = 0
         for filed_name, filed_value in data.items():
@@ -236,7 +252,7 @@ def gen_layer_code(dlayer, layer_cfg):
             else:
                 filed_value = 0
             value += (filed_value << kpu_layer_config_field_offset[reg_name][filed_name])
-        layer_cfg.reg_arg += value.to_bytes(8, 'little')
+        layer_cfg.reg_arg[kpu_layer_config_reg_offset[reg_name]*8:kpu_layer_config_reg_offset[reg_name]*8+8] = value.to_bytes(8, 'little')
 
 
 def gen_bn_code(dlayer, layer_cfg):
