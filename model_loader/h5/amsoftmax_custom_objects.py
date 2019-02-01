@@ -1,6 +1,58 @@
+import tensorflow as tf
 from keras import backend as K
 from keras.engine.topology import Layer
-import tensorflow as tf
+
+
+class CenterLossLayer(Layer):
+
+    def __init__(self, num_classes, feature_dim, alpha_center, **kwargs):
+        super().__init__(**kwargs)
+        self.alpha_center = alpha_center
+        self.num_classes = num_classes
+        self.feature_dim = feature_dim
+
+    def build(self, input_shape):
+        self.centers = self.add_weight(name='centers',
+                                       shape=(self.num_classes, self.feature_dim),
+                                       initializer='uniform',
+                                       trainable=False)
+        # self.counter = self.add_weight(name='counter',
+        #                                shape=(1,),
+        #                                initializer='zeros',
+        #                                trainable=False)  # just for debugging
+        super().build(input_shape)
+
+    def call(self, x, mask=None):
+        # x[0] is Nx2, x[1] is Nx10 onehot, self.centers is 10x2
+        delta_centers = K.dot(K.transpose(x[1]), (K.dot(x[1], self.centers) - x[0]))  # 10x2
+        center_counts = K.sum(K.transpose(x[1]), axis=1, keepdims=True) + 1  # 10x1
+        delta_centers /= center_counts
+        new_centers = self.centers - self.alpha_center * delta_centers
+        self.add_update((self.centers, new_centers), x)
+
+        # self.add_update((self.counter, self.counter + 1), x)
+
+        self.result = x[0] - K.dot(x[1], self.centers)
+        self.result = K.sum(self.result ** 2, axis=1, keepdims=True)  # / K.dot(x[1], center_counts)
+        return self.result  # Nx1
+
+    def compute_output_shape(self, input_shape):
+        return K.int_shape(self.result)
+
+    def get_config(self):
+        config = {
+            'num_classes': self.num_classes,
+            'feature_dim': self.feature_dim,
+            'alpha_center': self.alpha_center
+        }
+        base_config = super(CenterLossLayer, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+
+### custom loss
+
+def zero_loss(y_true, y_pred):
+    return 0.5 * K.sum(y_pred, axis=0)
 
 
 class AMSoftmax(Layer):
@@ -65,5 +117,7 @@ def get_custom_objects():
     return {
         'tf': tf,
         'AMSoftmax': AMSoftmax,
-        'amsoftmax_loss': amsoftmax_loss
+        'amsoftmax_loss': amsoftmax_loss,
+        'CenterLossLayer': CenterLossLayer,
+        'zero_loss': zero_loss
     }

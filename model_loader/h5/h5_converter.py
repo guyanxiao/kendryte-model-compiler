@@ -61,7 +61,10 @@ def convert(h5_in, custom_objects=None):
     K.set_learning_phase(0)
     net_model = keras.models.load_model(h5_in, custom_objects=custom_objects)
 
-    frozen_graph = freeze_session(K.get_session(), output_names=[net_model.output.op.name])
+    output_tensors = net_model.output if isinstance(net_model.output, list) else [net_model.output]
+    output_names = [iter.op.name for iter in output_tensors]
+
+    frozen_graph = freeze_session(K.get_session(), output_names=output_names)
     graph_io.write_graph(frozen_graph, pb_path, pb_name, as_text=False)
     tf.reset_default_graph()
     return pb_out
