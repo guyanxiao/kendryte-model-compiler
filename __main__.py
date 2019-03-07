@@ -69,7 +69,7 @@ def main():
     parser.add_argument('--tensor_output_name', default=None)
     parser.add_argument('--tensor_input_min', type=float, default=0)
     parser.add_argument('--tensor_input_max', type=float, default=1)
-    parser.add_argument('--tensor_input_minmax_auto', type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument('--tensor_input_minmax_auto', type=str2bool, nargs='?', const=True, default=True)
 
     parser.add_argument('--dataset_loader', default='dataset_loader/img_0_1.py')
     parser.add_argument('--dataset_pic_path', default='dataset/yolo')

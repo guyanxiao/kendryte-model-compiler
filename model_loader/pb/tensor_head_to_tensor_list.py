@@ -23,6 +23,7 @@ class PbConverter:
         self.activations = [
             'elu',
             'leaky_relu',
+            'leakyrelu',
             'relu',
             'relu6',
             'selu',
@@ -95,6 +96,9 @@ class PbConverter:
         elif self.ty_match(['act', 'Add', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0, 0)])
             return True
+        elif self.ty_match(['act', 'Add', 'Transpose', 'Conv2D', 'Transpose']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0, 0, 0, 0)])
+            return True
         elif self.ty_match(['act', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0)])
             return True
@@ -160,6 +164,9 @@ class PbConverter:
             return True
         elif self.ty_match(['AvgPool']):
             self.dst.append(['pool', *self.pop_src(0)])
+            return True
+        elif self.ty_match(['Transpose', 'MaxPool', 'Transpose']):
+            self.dst.append(['pool', *self.pop_src(0, 0, 0)])
             return True
         else:
             return False

@@ -24,11 +24,11 @@ def load_dataset(args):
     else:
         dataset_file_list = (args.dataset_path,)
 
-    max_pad_len = 512
+    max_pad_len = 256
     fbank_list = []
     for filename in dataset_file_list:
         fbank = np.array(feature_extraction.wav2fbank(filename, max_pad_len))
         fbank = fbank.reshape(64, max_pad_len, 1)
         fbank_list.append(fbank)
 
-    return np.array(fbank_list)
+    return np.array(fbank_list).transpose([0, 3, 1, 2])

@@ -21,6 +21,8 @@ import numpy as np
 
 
 def signed_to_hex(value, width):
+    if isinstance(value, np.ndarray):
+        value = value.tolist()
     return hex(int(round((1 << width) + value)) % (1 << width))
 
 

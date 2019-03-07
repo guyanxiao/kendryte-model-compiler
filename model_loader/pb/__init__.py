@@ -68,6 +68,7 @@ def load_model(dataset_val, range_from_batch, args):
         input_min = args.tensor_input_min
         input_max = args.tensor_input_max
         if args.tensor_input_minmax_auto:
+            tensor_input = sess.graph.get_tensor_by_name(args.dataset_input_name)
             input_min, input_max, *_ = range_from_batch(sess, tensor_input, dataset)
 
         k210_layers = layer_list_to_k210_layer.gen_k210_layers(

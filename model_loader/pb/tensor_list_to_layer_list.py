@@ -54,6 +54,7 @@ class LayerConvolutional(LayerBase):
         self.tensor = info
         self.bias = None
         self.batch_normalize_epsilon = 0
+        self.data_format = 'NHWC'
         batch_norm = None
         activation = None
         bias_add = None
@@ -82,6 +83,10 @@ class LayerConvolutional(LayerBase):
             activation, batch_norm, bias_add, conv2d = info
         elif self.type_match(info, ['LeakyRelu', 'BiasAdd', 'Conv2D']):
             activation, bias_add, conv2d = info
+        elif self.type_match(info, ['LeakyRelu', 'Add', 'Transpose', 'Conv2D', 'Transpose']):
+            activation, bias_add, trans, conv2d, _ = info
+            self.data_format = 'NCHW'
+            assert(trans.op.inputs[1].op.get_attr('value').ListFields()[2][1] == b'\x00\x00\x00\x00\x03\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00')
         elif self.type_match(info, ['Maximum', 'Mul', 'BiasAdd', 'Conv2D']):
             leaky_reul_max, leaky_reul_mul, bias_add, conv2d = info
             activation = ['leaky', leaky_reul_max, leaky_reul_mul]
@@ -152,6 +157,9 @@ class LayerConvolutional(LayerBase):
             else:
                 self.config['activation'] = activation[0]
             self.tensor_activation = activation[1]
+        elif isinstance(activation, tf.Tensor) and activation.op.type == 'LeakyRelu':
+            leaky_mul = activation.op.get_attr('alpha')
+            self.config['activation'] = ['LeakyRelu', leaky_mul]
         elif activation is not None:
             assert (isinstance(activation, tf.Tensor))
             self.config['activation'] = activation.op.type
@@ -161,6 +169,8 @@ class LayerConvolutional(LayerBase):
         self.weights = sess.run(conv2d.op.inputs[1], dataset)
         if bias_add is not None:
             self.bias = sess.run(bias_add.op.inputs[1], dataset)
+            if self.data_format == 'NCHW':
+                self.bias = self.bias[0, :, 0, 0]
 
         if isinstance(batch_norm, list):
             if isinstance(bn_sub, tf.Tensor) and isinstance(bn_div, tf.Tensor):
@@ -336,7 +346,13 @@ class LayerPool(LayerBase):
     def __init__(self, sess, info):
         super().__init__()
         self.config = {}
-        self.tensor_pool = info[0]
+        self.data_format = 'NHWC'
+        if len(info) == 1:
+            self.tensor_pool = info[0]
+        else:
+            trans = info[0]
+            self.tensor_pool = info[1]
+
         if self.tensor_pool.op.type not in ('MaxPool', 'AvgPool'):
             raise 'not supported pooling {}'.format(self.tensor_pool.op.type)
 

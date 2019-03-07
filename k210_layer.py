@@ -333,6 +333,8 @@ class K210Act:
         act_tab = None
         if self.ty == 'leaky':
             act_tab = list(K210Act.leaky_table(self.min_y, self.max_y, self.leaky_mul))
+        elif self.ty == 'LeakyRelu':
+            act_tab = list(K210Act.leaky_table(self.min_y, self.max_y, self.leaky_mul))
         elif self.ty == 'Relu':
             act_tab = list(K210Act.relu_table(self.min_y, self.max_y))
         elif self.ty == 'Relu6':

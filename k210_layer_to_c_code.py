@@ -214,6 +214,8 @@ def gen_weights_code(dlayer, idx, eight_bit_mode, prefix):
 def gen_layer_list_code(klayers: [k210_layer.K210Layer], eight_bit_mode, prefix, layer_start_idx):
     structs = gen_layer_list_struct(klayers, layer_start_idx)
     output_scale, output_bias = structs[-1][1]
+    input_scale = klayers[0].conv.x_range / 255
+    input_bias = klayers[0].conv.x_bias
 
     header_part = '#include "kpu.h"'
     footer_part = '\n'.join([
@@ -230,6 +232,8 @@ def gen_layer_list_code(klayers: [k210_layer.K210Layer], eight_bit_mode, prefix,
         ' task->eight_bit_mode = {};'.format(str(1 if eight_bit_mode else 0)),
         ' task->output_scale = {};'.format(output_scale),
         ' task->output_bias = {};'.format(output_bias),
+        ' task->input_scale = {};'.format(input_scale),
+        ' task->input_bias = {};'.format(input_bias),
         ' return task;',
         '}'
     ])

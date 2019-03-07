@@ -87,15 +87,15 @@ def make_k210_layer_from_tensor(sess, dataset, buffer, input_min, input_max, eig
         output_shape = [output_shape[0], output_shape[1]//pool_stride, output_shape[2]//pool_stride, output_shape[3]]
 
     return {
-        'iwo_minmax':[input_min, input_max, weights_min, weights_max, act_min_y, act_max_y],
-        'ico_shapes':[input_shape, conved_shape, output_shape],
+        'iwo_minmax': [input_min, input_max, weights_min, weights_max, act_min_y, act_max_y],
+        'ico_shapes': [input_shape, conved_shape, output_shape],
         'conv_weights_isdw':[conv_weights, conv_isdw],
-        'bn_mean_var_gamma_beta_epsilon':bn_mean_var_gamma_beta_epsilon,
-        'act_type':act_type,
+        'bn_mean_var_gamma_beta_epsilon': bn_mean_var_gamma_beta_epsilon,
+        'act_type': act_type,
         'pool_type_size_stride':pool_type_size_stride,
-        'eight_bit_mode':eight_bit_mode,
-        'cbap_tensor_info':[conv_tensor_info, bn_tensor_info, act_tensor_info, pool_tensor_info],
-        'idx':idx
+        'eight_bit_mode': eight_bit_mode,
+        'cbap_tensor_info': [conv_tensor_info, bn_tensor_info, act_tensor_info, pool_tensor_info],
+        'idx': idx
     }
 
 
