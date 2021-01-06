@@ -23,6 +23,7 @@ class PbConverter:
         self.activations = [
             'elu',
             'leaky_relu',
+            'leakyrelu',
             'relu',
             'relu6',
             'selu',
@@ -64,8 +65,12 @@ class PbConverter:
 
         return ret
 
-    def try_reshape(self):
+    def try_ignore(self):
         if self.ty_match(['Reshape']):
+            self.pop_src(0)
+            # self.dst.append(['???', reshape])
+            return True
+        if self.ty_match(['SpaceToBatchND']):
             self.pop_src(0)
             # self.dst.append(['???', reshape])
             return True
@@ -73,14 +78,29 @@ class PbConverter:
             return False
 
     def try_convolutional(self):
-        if self.ty_match(['BiasAdd', 'Conv2D']):
+        if self.ty_match(['Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0)])
+            return True
+        elif self.ty_match(['BiasAdd', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0)])
             return True
         elif self.ty_match(['Add', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0)])
             return True
+        elif self.ty_match(['Add', 'Mul', 'Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0, 0)])
+            return True
         elif self.ty_match(['act', 'BiasAdd', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0, 0)])
+            return True
+        elif self.ty_match(['act', 'Add', 'Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0, 0)])
+            return True
+        elif self.ty_match(['act', 'Add', 'Transpose', 'Conv2D', 'Transpose']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0, 0, 0, 0)])
+            return True
+        elif self.ty_match(['act', 'Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0)])
             return True
         elif self.ty_match(['Relu', 'FusedBatchNorm', 'BiasAdd', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 0, 0, 0)])
@@ -96,6 +116,9 @@ class PbConverter:
             return True
         elif self.ty_match(['Maximum', ('Mul', 1), 'Add', 'Mul', 'RealDiv', 'Sub', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 1, 0, 0, 0, 0, 0)])
+            return True
+        elif self.ty_match(['Relu', 'Add', 'Mul', 'RealDiv', 'Sub', 'Conv2D']):
+            self.dst.append(['convolutional', *self.pop_src(0, 0, 0, 0, 0, 0)])
             return True
         elif self.ty_match(['Maximum', ('Mul', 1), 'Add', 'Mul', 'Conv2D']):
             self.dst.append(['convolutional', *self.pop_src(0, 1, 0, 0, 0)])
@@ -142,12 +165,18 @@ class PbConverter:
         elif self.ty_match(['AvgPool']):
             self.dst.append(['pool', *self.pop_src(0)])
             return True
+        elif self.ty_match(['Transpose', 'MaxPool', 'Transpose']):
+            self.dst.append(['pool', *self.pop_src(0, 0, 0)])
+            return True
         else:
             return False
 
     def try_depthwise_convolutional(self):
         if self.ty_match(['act', 'FusedBatchNorm', 'BiasAdd', 'DepthwiseConv2dNative']):
             self.dst.append(['depthwise_convolutional', *self.pop_src(0, 0, 0, 0)])
+            return True
+        elif self.ty_match(['DepthwiseConv2dNative']):
+            self.dst.append(['depthwise_convolutional', *self.pop_src(0)])
             return True
         elif self.ty_match(['act', 'FusedBatchNorm', 'DepthwiseConv2dNative']):
             self.dst.append(['depthwise_convolutional', *self.pop_src(0, 0, 0)])
@@ -163,6 +192,9 @@ class PbConverter:
             return True
         elif self.ty_match(['Maximum', ('Mul', 1), 'Add', 'Mul', 'RealDiv', 'Sub', 'DepthwiseConv2dNative']):
             self.dst.append(['depthwise_convolutional', *self.pop_src(0, 1, 0, 0, 0, 0, 0)])
+            return True
+        elif self.ty_match(['act', 'Add', 'Mul', 'RealDiv', 'Sub', 'DepthwiseConv2dNative']):
+            self.dst.append(['depthwise_convolutional', *self.pop_src(0, 0, 0, 0, 0, 0)])
             return True
         else:
             return False
@@ -188,7 +220,7 @@ class PbConverter:
     def convert_step(self):
         converters = (
             self.try_input,
-            self.try_reshape,
+            self.try_ignore,
             self.try_convolutional,
             self.try_pool,
             self.try_depthwise_convolutional,
@@ -201,8 +233,7 @@ class PbConverter:
 
         if self.output_tensor is not None:
             raise ValueError('no converter for', self.output_tensor.op.type, 'name:', self.output_tensor.op.name)
-        else:
-            print('convert done.')
+
         return False
 
     def convert(self):

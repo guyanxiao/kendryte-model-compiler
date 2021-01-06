@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  '''
- 
-import keras.models
-import tensorflow as tf
+
 import tempfile
-from keras import backend as K
+import tensorflow as tf
 from tensorflow.python.framework import graph_io
+import keras.models
+from keras import backend as K
 
 
 def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
@@ -40,7 +40,7 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
     from tensorflow.python.framework.graph_util import convert_variables_to_constants
     graph = session.graph
     with graph.as_default():
-        freeze_var_names = None #list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
+        freeze_var_names = None  # list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
         output_names = output_names or []
         # output_names += [v.op.name for v in tf.global_variables()]
         input_graph_def = graph.as_graph_def()
@@ -52,15 +52,19 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
         return frozen_graph
 
 
-def convert(h5_in):
+def convert(h5_in, custom_objects=None):
     pb_out = tempfile.mktemp('.pb')
     *pb_path_list, pb_name = pb_out.split('/')
     pb_path = '/'.join(pb_path_list)
+    custom_objects = custom_objects or {'tf': tf}
 
     K.set_learning_phase(0)
-    net_model = keras.models.load_model(h5_in)
+    net_model = keras.models.load_model(h5_in, custom_objects=custom_objects)
 
-    frozen_graph = freeze_session(K.get_session(), output_names=[net_model.output.op.name])
+    output_tensors = net_model.output if isinstance(net_model.output, list) else [net_model.output]
+    output_names = [iter.op.name for iter in output_tensors]
+
+    frozen_graph = freeze_session(K.get_session(), output_names=output_names)
     graph_io.write_graph(frozen_graph, pb_path, pb_name, as_text=False)
     tf.reset_default_graph()
     return pb_out

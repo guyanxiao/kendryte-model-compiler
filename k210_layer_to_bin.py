@@ -14,9 +14,10 @@
  * limitations under the License.
  '''
 
-import layer_list_to_k210_layer
+import k210_layer
 import math
 from struct import pack
+import tools
 
 default_conv_arg = None
 default_act_arg = None
@@ -111,26 +112,19 @@ def min_max_to_scale_bias(minv, maxv):
     return scale, bias
 
 
-def gen_layer_struct(klayer: layer_list_to_k210_layer.K210Layer, idx: int):
+def gen_layer_struct(klayer: k210_layer.K210Layer, idx: int):
     reserved = 0
     set_to_zero = 0
     img_ram_size = 2 * 1024 * 1024
 
     conv_arg = klayer.conv and klayer.conv.to_k210() or default_conv_arg
-    act_arg = klayer.act and klayer.act.to_k210() or default_act_arg
     bn_arg = klayer.bn and klayer.bn.to_k210(conv_arg['swsx']) or default_bn_arg
+    act_arg = klayer.act and klayer.act.to_k210(bn_arg['post_scale']) or default_act_arg
     pool_arg = klayer.pool and klayer.pool.to_k210() or default_pool_arg
-    io_arg = klayer.to_k210(idx)
+    io_arg = klayer.to_k210()
 
     mino, maxo = klayer.act.min_y, klayer.act.max_y
-    if klayer.pool:
-        tensor_out = klayer.pool.tensor
-    else:
-        tensor_out = klayer.act.tensor
-
-    output_scale, output_bias = min_max_to_scale_bias(mino, maxo)
-    print("[layer {}]".format(idx), tensor_out.op.name, 'scale/bias:', output_scale, output_bias)
-
+    output_scale, output_bias = tools.min_max_to_scale_bias(mino, maxo)
 
     img_input_size = int(math.ceil(io_arg['i_ch_num'] / conv_arg['coef_group']) * 64 * conv_arg['channel_switch_addr'])
     img_output_size = int(math.ceil(io_arg['o_ch_num'] / io_arg['wb_group']) * 64 * io_arg['wb_channel_switch_addr'])
@@ -223,7 +217,7 @@ def gen_layer_struct(klayer: layer_list_to_k210_layer.K210Layer, idx: int):
     }, (output_scale, output_bias)
 
 
-def gen_layer_list_struct(klayers: [layer_list_to_k210_layer.K210Layer]):
+def gen_layer_list_struct(klayers: [k210_layer.K210Layer]):
     ret = [
         gen_layer_struct(klayer, idx)
         for klayer, idx in zip(klayers, range(len(klayers)))
@@ -274,7 +268,7 @@ def gen_weights_code(dlayer, layer_cfg, eight_bit_mode):
         layer_cfg.weights_arg = bytearray(layer_cfg.weights_len)
         i = 0
         for item in weights:
-            layer_cfg.weights_arg[i] = int(signed_to_hex(item, 8), 16).to_bytes(1, 'little')
+            layer_cfg.weights_arg[i:i+1] = int(signed_to_hex(item, 8), 16).to_bytes(1, 'little')
             i += 1
     else:
         layer_cfg.weights_len = len(weights) * 2
@@ -299,7 +293,7 @@ class layer_config_struct():
         self.weights_arg = b''
 
 
-def gen_layer_bin(klayers: [layer_list_to_k210_layer.K210Layer], eight_bit_mode):
+def gen_layer_bin(klayers: [k210_layer.K210Layer], eight_bit_mode):
     structs = gen_layer_list_struct(klayers)
     output_scale, output_bias = structs[-1][1]
 
@@ -350,4 +344,14 @@ def gen_layer_bin(klayers: [layer_list_to_k210_layer.K210Layer], eight_bit_mode)
         param_part += layer.bn_arg
         param_part += layer.weights_arg
 
-    return model_config_part + layer_config_part + param_part
+    model_bin = model_config_part + layer_config_part + param_part
+    if len(model_bin) % 4:
+        model_bin += bytearray(4 - len(model_bin) % 4)
+    model_bin_reverse = bytearray(len(model_bin))
+    for i in range(0, len(model_bin), 4):
+        model_bin_reverse[i] = model_bin[i+3]
+        model_bin_reverse[i+1] = model_bin[i+2]
+        model_bin_reverse[i+2] = model_bin[i+1]
+        model_bin_reverse[i+3] = model_bin[i]
+
+    return model_bin_reverse

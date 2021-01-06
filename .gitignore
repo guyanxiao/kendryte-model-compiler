@@ -8,3 +8,5 @@ build
 pb_files/*
 !pb_files/20classes_yolo.pb
 dataset/face_aligned
+dataset/audio
+dataset/audio_1

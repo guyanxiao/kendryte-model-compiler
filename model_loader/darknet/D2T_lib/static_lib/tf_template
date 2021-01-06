@@ -1,0 +1,111 @@
+>global,empty_line
+
+>global,header
+"""
+This .py module is compiled by Dark2T ver. 0.0.1
+you use this .py code as a module to import, and embed it into your own tensorflow code
+"""
+
+# for storing weights
+data_lib = dict()
+end_node = dict()
+
+# imports
+from d2t.tf_functions import *
+import tensorflow as tf
+from re import split
+
+_mod_path_ = ''.join('%s/'%_s for _s in split(r'[/\\]', __file__)[:-1])
+# ----------------------------------------- #
+>global,__init__
+from {0}.{1} import *
+import {0}.d2t
+
+
+>scope,var_scope
+with tf.variable_scope('{0[0]}','{0[1]}'):
+>global,data_type
+# global data type
+_data_type_ = '{}'
+
+>global,def_net
+def network_forward(input):
+	global data_lib
+	net = input
+
+>darknet,read_tfw
+# read weights from .tfw file
+_data_bytes_ = bytes_from_TFW(_mod_path_ + '{0}')
+
+
+>global,def_loaddata
+def load_data():
+	global data_lib
+	# load pre-trained data here
+>train,make_w
+data_lib['{0[0]}_w'] = None
+>train,make_b
+data_lib['{0[0]}_b'] = None
+
+>darknet,load_tfw
+_data_bytes_ = bytes_from_TFW({0})
+
+>darknet,load_b
+data_lib['{0[0]}_b'] = var_from_bytes(_data_bytes_,{0[1]},{0[2]},
+										None,{0[3]},'{0[0]}_b',_data_type_)
+>darknet,load_s
+data_lib['{0[0]}_s'] = var_from_bytes(_data_bytes_,{0[1]},{0[2]},
+										None,{0[3]},'{0[0]}_s',_data_type_)
+>darknet,load_m
+data_lib['{0[0]}_m'] = var_from_bytes(_data_bytes_,{0[1]},{0[2]},
+										None,{0[3]},'{0[0]}_m',_data_type_)
+>darknet,load_v
+data_lib['{0[0]}_v'] = var_from_bytes(_data_bytes_,{0[1]},{0[2]},
+										None,{0[3]},'{0[0]}_v',_data_type_)
+>darknet,load_w
+data_lib['{0[0]}_w'] = var_from_bytes(_data_bytes_,{0[1]},{0[2]},
+										{0[3]},{0[4]},'{0[0]}_w',_data_type_)
+
+
+>darknet,convolutional
+net = convolutional(net, weights=data_lib['{0[0]}_w'], biases=data_lib['{0[0]}_b'],
+                  strides={0[1]}, padding='{0[2]}',
+                  activation_fn = {0[3]},
+                  batch_normalize = {0[4]},
+                  bn_scale = data_lib['{0[0]}_s'],
+                  bn_mean = data_lib['{0[0]}_m'],
+                  bn_variance = data_lib['{0[0]}_v'],
+                  parent_scope = '{0[5]}', my_scope = '{0[6]}',
+                  reuse = {0[7]})
+end_node['{0[0]}'] = net # save node
+                  
+>darknet,depthwise_convolutional
+net = depthwise_convolutional(net, weights=data_lib['{0[0]}_w'], biases=data_lib['{0[0]}_b'],
+                  strides={0[1]}, padding='{0[2]}',
+                  activation_fn = {0[3]},
+                  batch_normalize = {0[4]},
+                  bn_scale = data_lib['{0[0]}_s'],
+                  bn_mean = data_lib['{0[0]}_m'],
+                  bn_variance = data_lib['{0[0]}_v'],
+                  parent_scope = '{0[5]}', my_scope = '{0[6]}',
+                  reuse = {0[7]})
+end_node['{0[0]}'] = net # save node
+
+>darknet,maxpool
+net = max_pool(net, ksize={0[0]}, strides={0[1]}, padding='{0[2]}', scope='{0[3]}', name = '{0[4]}')
+end_node['{0[4]}'] = net # save node
+
+>darknet,avgpool
+net = avg_pool(net, ksize={0[0]}, strides={0[1]}, padding='{0[2]}', scope='{0[3]}', name = '{0[4]}')
+end_node['{0[4]}'] = net # save node
+
+>darknet,route_concat
+net = route_concat([{0[0]}], axis = -1, name = '{0[1]}')
+end_node['{0[1]}'] = net # save node 
+
+>darknet,route_sum
+net = route_sum([{0[0]}], activation_fn = {0[1]}, name = '{0[2]}')
+end_node['{0[2]}'] = net # save node
+
+>output,net_out
+return net

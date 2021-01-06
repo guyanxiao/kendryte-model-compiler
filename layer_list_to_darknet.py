@@ -14,7 +14,7 @@
  * limitations under the License.
  '''
 
-import tensor_list_to_layer_list
+from model_loader.pb import tensor_list_to_layer_list
 import numpy
 
 
