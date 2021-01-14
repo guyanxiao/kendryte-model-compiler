@@ -200,7 +200,7 @@ class maxpooling_layer(_basic_layer_):
         self.kernel_size = (int)(kwargs['size']) if 'size' in kwargs else 0  # if not specified => reduce_max
         self.stride = (int)(kwargs['stride']) if 'stride' in kwargs else 0
 
-        self.padding = 'SAME'
+        self.padding = 'FALID'
         if 'pad' in kwargs:
             self.padding = 'VALID' if kwargs['pad'] == '0' else 'SAME'
 
